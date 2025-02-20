@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, Depends
 from app.schemas import Message, Tags
 
 router = APIRouter(
-    prefix="/activity",
+    prefix="/healthcheck",
     tags=[Tags.Healthcheck]
 )
 
