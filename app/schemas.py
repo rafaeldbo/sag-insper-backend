@@ -4,8 +4,13 @@ from enum import Enum
 
 class Tags(Enum):
     Activity = 'Activity'
+    Healthcheck = 'Healthcheck'
     
     __metadata__ = [
+        {
+            'name': 'Healthcheck',
+            'description': 'Endpoint to check if the API is running',
+        },
         {
             'name': 'Activity',
             'description': 'Endpoint to manage activities timetable of Insper undergraduate',
