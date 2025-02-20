@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status, Depends
-from app.schemas import Message, Tags
+from app.schemas import Message
+from app.metadata import Tags
 
 router = APIRouter(
     prefix="/healthcheck",

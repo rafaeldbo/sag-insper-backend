@@ -1,4 +1,5 @@
 fastapi[standard]
+fastapi-cors
 requests
 firebase-admin
 python-dotenv

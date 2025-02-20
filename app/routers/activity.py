@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends
 from app.dependencies import Firebase, get_db
-from app.schemas import Activity, ActivityPatch, Message, Tags
+from app.schemas import Activity, ActivityPatch, Message
+from app.metadata import Tags
 
 router = APIRouter(
     prefix="/activity",
