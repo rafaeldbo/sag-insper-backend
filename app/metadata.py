@@ -4,13 +4,19 @@ from enum import Enum
 from dotenv import load_dotenv
 from os import getenv
 
+
 load_dotenv(override=True)
 
 class Tags(Enum):
-    Activity = 'Activity'
+    Auth = 'Auth'
     Healthcheck = 'Healthcheck'
+    Activity = 'Activity'
     
     __metadata__ = [
+        {
+            'name': 'Auth',
+            'description': 'Endpoint to manage user authentication',
+        },
         {
             'name': 'Healthcheck',
             'description': 'Endpoint to check if the API is running',

@@ -1,31 +1,18 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Security
+from fastapi.security.api_key import APIKeyHeader
+
+from app.metadata import Tags
+from app.security import validate_auth
 from app.dependencies import Firebase, get_db
 from app.schemas import Activity, ActivityPatch, Message
-from app.metadata import Tags
 
 router = APIRouter(
     prefix="/activity",
     tags=[Tags.Activity]
 )
-
-# CRUD para Activity
-@router.post('/', 
-    status_code=status.HTTP_201_CREATED, 
-    response_model=Activity,
-    response_description='Activity created successfully',
-    summary='Create a Activity',
-    responses={
-        409: {
-            'description': "Conflict with any of the entity's rules."
-        },
-        500: {
-            'description': "Internal server error."
-        }
-    }
-)
-async def create_activity(activity: Activity, db: Firebase=Depends(get_db)) -> Activity:    
-    return await db.create(activity)
     
+    
+# CRUD para Activity
 @router.get('/', 
     status_code=status.HTTP_200_OK, 
     response_model=list[Activity],
@@ -41,12 +28,40 @@ async def create_activity(activity: Activity, db: Firebase=Depends(get_db)) -> A
 async def get_all_activities(db: Firebase=Depends(get_db)) -> list[Activity]:
     return await db.get_all()
 
+@router.post('/', 
+    status_code=status.HTTP_201_CREATED, 
+    response_model=Activity,
+    response_description='Activity created successfully',
+    summary='Create a Activity',
+    responses={
+        403: {
+            'description': "authorization not provided"
+        },
+        409: {
+            'description': "Conflict with any of the entity's rules."
+        },
+        500: {
+            'description': "Internal server error."
+        }
+    }
+)
+async def create_activity(
+    activity: Activity, 
+    db: Firebase=Depends(get_db),
+    Authorization: str=Security(APIKeyHeader(name="Authorization"))
+) -> Activity:
+    validate_auth(Authorization)
+    return await db.create(activity)
+
 @router.patch('/{id}', 
     status_code=status.HTTP_200_OK, 
     response_model=Activity, 
     response_description='Activity updated successfully',
     summary='Update a Activity',
     responses={
+        403: {
+            'description': "authorization not provided"
+        },
         404: {
             'description': "ID not found."
         },
@@ -58,7 +73,13 @@ async def get_all_activities(db: Firebase=Depends(get_db)) -> list[Activity]:
         }
     }
 )
-async def update_activity(id: str, activity_patch: ActivityPatch, db: Firebase=Depends(get_db)) -> Activity:
+async def update_activity(
+    id: str, 
+    activity_patch: ActivityPatch, 
+    db: Firebase=Depends(get_db),
+    Authorization: str=Security(APIKeyHeader(name="Authorization"))
+) -> Activity:
+    validate_auth(Authorization)
     return await db.update(id, activity_patch)
 
 @router.delete('/{id}', 
@@ -77,6 +98,9 @@ async def update_activity(id: str, activity_patch: ActivityPatch, db: Firebase=D
                 }
             }
         },
+        403: {
+            'description': "authorization not provided"
+        },
         404: {
             'description': "ID not found."
         },
@@ -88,5 +112,10 @@ async def update_activity(id: str, activity_patch: ActivityPatch, db: Firebase=D
         }
     }
 )
-async def delete_activity(id: str, db: Firebase=Depends(get_db)) -> Message:
+async def delete_activity(
+    id: str, 
+    db: Firebase=Depends(get_db),
+    Authorization: str=Security(APIKeyHeader(name="Authorization"))
+) -> Message:
+    validate_auth(Authorization)
     return await db.delete(id)

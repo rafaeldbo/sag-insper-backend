@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import Enum
 
 from app.schemas import Message
+from .utils import generate_random_alphanumeric
 
 class DatabaseException(Exception):
     pass
@@ -29,7 +30,7 @@ class Database:
     
     def get_unique_id(self) -> str:
         while True:
-            id = ''.join(random.choices(self.caracteres, k=10))
+            id = generate_random_alphanumeric(length=10)
             if self.data.get(id) is None:
                 break
         return id

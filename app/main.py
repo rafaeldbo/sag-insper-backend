@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import activity, healthcheck
+from .routers import auth, healthcheck, activity
 from app.metadata import Tags, ALLOWED_ORIGINS
 
 app = FastAPI(
@@ -18,5 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(healthcheck.router)
 app.include_router(activity.router)

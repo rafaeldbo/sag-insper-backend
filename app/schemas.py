@@ -5,6 +5,28 @@ from enum import Enum
 class Message(BaseModel):
     detail: str
 
+class Token(BaseModel):
+    token: str
+    
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0aW1lIjoxNzM3OTQ2ODAwfQ.2l3gOZSFaXNRad3jYTZClv7plpOtH5OQCF_tSmyWU1M'}
+            ]
+        }
+    }
+    
+class Password(BaseModel):
+    hashed_password: str
+    
+    model_config = {
+        'json_schema_extra': {
+            'examples': [
+                {'hashed_password': '62a7ed69caab94a7b515c187936ade2a60e5ea5fe8f06abff7de671be2e52daa'}
+            ]
+        }
+    }
+
 class Courses(Enum):
     ADM_ECO = 'ADM/ECO'
     ADM = 'ADM'
