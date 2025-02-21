@@ -1,13 +1,13 @@
 
 from fastapi import HTTPException
 
-import random, json, string
+import json
 from pydantic import BaseModel, ValidationError
 from datetime import datetime
 from enum import Enum
 
 from app.schemas import Message
-from .utils import generate_random_alphanumeric
+from app.utils import generate_random_alphanumeric
 
 class DatabaseException(Exception):
     pass
@@ -20,7 +20,6 @@ def parse_Enum(cls) -> str:
 class Database:
     data: dict[str, dict]
     last_update: float
-    caracteres: str = string.ascii_letters + string.digits
     
     def __init__(self, data: dict[str, dict], last_update: float) -> None:
         if data is None:
@@ -71,33 +70,18 @@ class Firebase:
     collection_id: str = "unique"
     collection_name: str
     data_type: type[BaseModel]
-    create_data_type: type[BaseModel]
-    patch_data_type: type[BaseModel]
     
-    def __init__(self, 
-        db_conection,
-        collection_name: str, 
-        data_type: type[BaseModel], 
-        create_data_type: type[BaseModel] = None, 
-        patch_data_type: type[BaseModel]=None
-    ) -> None:
+    def __init__(self, db_conection, collection_name: str, data_type: type[BaseModel]) -> None:
         self.db_conection = db_conection
         self.collection_name = collection_name
         self.data_type = data_type
-        self.create_data_type = create_data_type if create_data_type is not None else data_type
-        self.patch_data_type = patch_data_type if patch_data_type is not None else data_type
         
-    def validate_object(self, obj: dict|BaseModel, model: type[BaseModel] = None) -> bool:
-        data_type = model if model is not None else self.data_type
+    def parse_object(self, obj: dict|BaseModel) -> BaseModel:
         try:
-            data_type.model_validate(obj)
-            return True
+            return self.data_type.model_validate(obj)
         except ValidationError as e:
-            return False
+            raise HTTPException(status_code=422, detail=e.errors(include_context=False, include_input=False, include_url=False))
         
-    def validate_data(self, data: list[dict]) -> list[bool]:
-        return map(self.validate_object, data)
-
     async def sync_data(self) -> Database:
         try:
             doc_ref = self.db_conection.collection(self.collection_name).document(self.collection_id)
@@ -118,43 +102,38 @@ class Firebase:
             raise HTTPException(status_code=500, detail='there was an error accessing the database while sending data to the database')
 
     async def get_all(self) -> list[BaseModel]:
-        try:
-            database = await self.sync_data()
-            return list(map(self.data_type.model_validate, database.get_all()))
-        except Exception as e:
-            print(e)
-            raise HTTPException(status_code=500, detail='there was an error while accessing the database, during a [get_all] operation')
+        database = await self.sync_data()
+        
+        return list(map(self.parse_object, database.get_all()))
 
     async def create(self, new_data: BaseModel) -> BaseModel:
-        if not self.validate_object(new_data):
-            raise HTTPException(status_code=409, detail='invalid data')
-        try:
-            database = await self.sync_data()
-            data_obj = self.data_type.model_validate(database.add(new_data.model_dump()))
-            await self.send_data(database)
-            return data_obj
-        except Exception as e:
-            print(e)
-            raise HTTPException(status_code=500, detail='there was an error while accessing the database, during a [create] operation')
+        database = await self.sync_data()
+        
+        data_obj = self.parse_object(database.add(new_data.model_dump()))
+        
+        await self.send_data(database)
+        return data_obj
 
     async def update(self, id: str, updating_data: BaseModel) -> BaseModel:
-        if not self.validate_object(updating_data, self.patch_data_type):
-            raise HTTPException(status_code=409, detail='invalid data')
-        try:
-            database = await self.sync_data()
-            data_obj = database.update(id, updating_data.model_dump(exclude_unset=True))
-            await self.send_data(database)
-            return data_obj
-        except Exception as e:
-            print(e)
-            raise HTTPException(status_code=500, detail='there was an error while accessing the database, during a [update] operation')
+        database = await self.sync_data()
+        
+        data = database.get(id)
+        if data is None:
+            raise HTTPException(status_code=404, detail='ID not found')
+
+        data = self.parse_object({**database.get(id), **updating_data.model_dump(exclude_unset=True)})
+        data = database.update(id, data.model_dump(exclude_unset=True))
+        
+        await self.send_data(database)
+        return data
 
     async def delete(self, id: str) -> None:
-        try:
-            database = await self.sync_data()
-            database.delete(id)
-            await self.send_data(database)
-            return Message(detail=f'{self.data_type.__name__} deleted successfully')
-        except Exception as e:
-            print(e)
-            raise HTTPException(status_code=500, detail='there was an error while accessing the database, during a [delete] operation')
+        database = await self.sync_data()
+        
+        if database.get(id) is None:
+            raise HTTPException(status_code=404, detail='ID not found')
+        
+        database.delete(id)
+        
+        await self.send_data(database)
+        return Message(detail=f'{self.data_type.__name__} deleted successfully')

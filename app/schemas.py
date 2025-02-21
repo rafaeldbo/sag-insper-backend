@@ -1,5 +1,5 @@
 from typing_extensions import Annotated
-from pydantic import BaseModel, StringConstraints, ValidationError, Field, model_validator
+from pydantic import BaseModel, StringConstraints, Field, model_validator
 from enum import Enum
     
 class Message(BaseModel):
@@ -75,6 +75,9 @@ class ActivityTypes(Enum):
     def __str__(self):
         return self.value
 
+class TimeError(ValueError):
+    pass
+
 class Activity(BaseModel):
     id: str = Field(default=None, min_length=10, max_length=10)
     cod_turma: str = None
@@ -95,10 +98,21 @@ class Activity(BaseModel):
         start_hour, start_minutes = map(int, self.hora_inicio.split(":"))
         end_hour, end_minutes = map(int, self.hora_fim.split(":"))
         
+        if start_hour > 23:
+            raise TimeError('Invalid start hour')
+        if start_minutes > 59:
+            raise TimeError('Invalid start minutes')
+        if end_hour > 23:
+            raise TimeError('Invalid end hour')
+        if end_minutes > 59:
+            raise TimeError('Invalid end minutes')
         if start_hour > end_hour or (start_hour == end_hour and start_minutes > end_minutes):
-            raise ValidationError('Invalid time interval')
-        if self.cod_turma is None:
-            self.cod_turma = f"{self.curso}_{self.serie}{self.turma}"
+            raise TimeError('Invalid time interval')
+        
+        self.nome_disciplina = self.nome_disciplina.upper()
+        self.docentes = self.docentes.upper()
+        self.cod_turma = f"{self.curso}_{self.serie}{self.turma}"
+        
         return self
 
     def __getattribute__(self, name):
@@ -145,6 +159,12 @@ class ActivityPatch(BaseModel):
     docentes: str  = None
     cor: int = Field(default=None, ge=0, le=5)
     posicao: int = None
+
+    def __getattribute__(self, name):
+        value = super().__getattribute__(name)
+        if isinstance(value, Enum):
+            return value.value
+        return value
     
     model_config = {
         'json_schema_extra': {

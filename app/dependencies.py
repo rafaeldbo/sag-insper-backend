@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from os import getenv
 
 from .database import Firebase
-from .schemas import Activity, ActivityPatch
+from .schemas import Activity
 
 load_dotenv(override=True)
 
@@ -24,7 +24,7 @@ cred = credentials.Certificate({
 firebase_admin.initialize_app(cred)
 firebase_db = firestore.client()
 
-ActivityDatabase = Firebase(firebase_db, 'activities_raw', Activity, patch_data_type=ActivityPatch)
+ActivityDatabase = Firebase(firebase_db, 'activities_raw', Activity)
 
 def get_db():
     yield ActivityDatabase

@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 from os import getenv
 from hashlib import sha256
