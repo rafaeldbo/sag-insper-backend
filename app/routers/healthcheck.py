@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status
 from app.schemas import Message
 from app.metadata import Tags
 

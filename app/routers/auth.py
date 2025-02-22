@@ -30,7 +30,7 @@ router = APIRouter(
 def login(password: Password) -> Token:
     
     if password.hashed_password != HASHED_PASSWORD:
-        raise HTTPException(status_code=401, detail='incorrect password')
+        raise HTTPException(status_code=403, detail='incorrect password')
 
     return Token(token=jwt.encode({'domain': 'admin', 'expires': (datetime.now()+timedelta(days=30)).timestamp()}, ADMIN_SECRET_KEY, 'HS256'))
 
